@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "log.hh"
 #include "sourcelocation.hh"
 
 class Diagnostics {
@@ -67,6 +68,14 @@ class Diagnostics {
     auto it = warnings.find(warning_kind);
     static const std::vector<std::string> empty;
     return it == warnings.end() ? empty : it->second;
+  }
+
+  void print_errors() {
+    for (const auto& error_kind : Diagnostics::instance().get_errors()) {
+      for (const auto& err : error_kind.second) {
+        LOG_ERROR("{}", err);
+      }
+    }
   }
 
  private:

@@ -40,11 +40,7 @@ int main(const int argc, char** argv) {
   }
 
   if (Diagnostics::instance().has_errors()) {
-    for (const auto& error_kind : Diagnostics::instance().get_errors()) {
-      for (const auto& err : error_kind.second) {
-        LOG_ERROR("{}", err);
-      }
-    }
+    Diagnostics::instance().print_errors();
     delete ast;
     return 1;
   }
@@ -54,24 +50,20 @@ int main(const int argc, char** argv) {
 
   if (!sema_tree) {
     if (Diagnostics::instance().has_errors()) {
-      for (const auto& error_kind : Diagnostics::instance().get_errors()) {
-        for (const auto& err : error_kind.second) {
-          LOG_ERROR("{}", err);
-        }
-      }
+      Diagnostics::instance().print_errors();
+      LOG_ERROR("Semantic analysis failed; skipping code generation");
+      delete ast;
+      return 1;
     }
-    LOG_ERROR("Semantic analysis failed; skipping code generation");
+
+    // CodeGenerator gen(ctx);
+    // std::string code = gen.generate(*sema_tree);
+    // LOG_INFO("\n{}", code);
+
+    // std::ofstream out("program.s");
+    // out << code;
+    // out.close();
+
     delete ast;
-    return 1;
   }
-
-  // CodeGenerator gen(ctx);
-  // std::string code = gen.generate(*sema_tree);
-  // LOG_INFO("\n{}", code);
-
-  // std::ofstream out("program.s");
-  // out << code;
-  // out.close();
-
-  delete ast;
 }
