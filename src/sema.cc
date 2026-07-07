@@ -1,6 +1,7 @@
 #include "sema.hh"
 
 #include "ast.hh"
+#include "diagnostics.hh"
 #include "log.hh"
 #include "methodtable.hh"
 #include "visitor/nameresolver.hh"
@@ -12,9 +13,9 @@ ProgramNode* Sema::analyze(ProgramNode& root) {
   LOG_DEBUG("Collecting symbols");
   SymbolCollector symbol_collector(ctx);
   symbol_collector.collect(root);
-  if (symbol_collector.has_errors()) {
+  if (Diagnostics::instance().has_errors(SymbolCollector::LOG_KIND)) {
     LOG_ERROR("Symbol collector has failed with {} errors",
-              symbol_collector.error_count());
+              Diagnostics::instance().error_count(SymbolCollector::LOG_KIND));
     return nullptr;
   }
 
@@ -33,9 +34,9 @@ ProgramNode* Sema::analyze(ProgramNode& root) {
   LOG_DEBUG("Resolving names");
   NameResolver name_resolver(ctx);
   name_resolver.resolve(root);
-  if (name_resolver.has_errors()) {
+  if (Diagnostics::instance().error_count(NameResolver::LOG_KIND)) {
     LOG_ERROR("Name resolver has failed with {} errors",
-              name_resolver.error_count());
+              Diagnostics::instance().error_count(NameResolver::LOG_KIND));
     return nullptr;
   }
 
@@ -43,9 +44,9 @@ ProgramNode* Sema::analyze(ProgramNode& root) {
   TypeChecker type_checker(ctx);
   type_checker.check(root);
 
-  if (type_checker.has_errors()) {
+  if (Diagnostics::instance().error_count(TypeChecker::LOG_KIND)) {
     LOG_ERROR("Type checker has failed with {} errors",
-              type_checker.error_count());
+              Diagnostics::instance().error_count(TypeChecker::LOG_KIND));
     return nullptr;
   }
 

@@ -1,5 +1,7 @@
 #include "visitor/typechecker.hh"
 
+#include "diagnostics.hh"
+
 void TypeChecker::checkStatement(StmtNode& stmt) {
   if (auto* node = dynamic_cast<BlockNode*>(&stmt))
     checkBlock(*node);
@@ -16,7 +18,8 @@ void TypeChecker::checkStatement(StmtNode& stmt) {
   else if (auto* node = dynamic_cast<MethodDeclNode*>(&stmt))
     checkMethodDecl(*node);
   else
-    report_error("Unknown statment type", stmt.location);
+    Diagnostics::instance().report_error(LOG_KIND, "Unknown statment type",
+                                         stmt.location);
 }
 
 const Type* TypeChecker::checkExpression(ExprNode& expr) {
@@ -37,7 +40,8 @@ const Type* TypeChecker::checkExpression(ExprNode& expr) {
   if (auto* node = dynamic_cast<VarDeclNode*>(&expr))
     return checkVarDecl(*node);
 
-  report_error("Unknown expression type", expr.location);
+  Diagnostics::instance().report_error(LOG_KIND, "Unknown expression type",
+                                       expr.location);
   return ctx.get_void_type();
 }
 
@@ -58,11 +62,13 @@ const Type* TypeChecker::checkVarDecl(VarDeclNode& node) {
 
   if (node.initializer && !node.declared_type->is_compatible_with(
                               *node.initializer->semantic.declared_type)) {
-    report_error("Type '" + node.declared_type->to_string() +
-                     "' does not match initializer type '" +
-                     node.initializer->semantic.declared_type->to_string() +
-                     "' in '" + node.identifier.getValue() + "' declaration",
-                 node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND,
+        "Type '" + node.declared_type->to_string() +
+            "' does not match initializer type '" +
+            node.initializer->semantic.declared_type->to_string() + "' in '" +
+            node.identifier.getValue() + "' declaration",
+        node.location);
     return ctx.get_void_type();
   }
 
@@ -76,7 +82,8 @@ void TypeChecker::checkIfStmt(IfStmtNode& node) {
   if (node.condition) checkExpression(*node.condition);
   if (!node.condition->semantic.declared_type->is_compatible_with(
           *ctx.get_bool_type())) {
-    report_error(
+    Diagnostics::instance().report_error(
+        LOG_KIND,
         "If statement condition is not compatible with boolean, condition "
         "type: '" +
             node.condition->semantic.declared_type->to_string() + "'",
@@ -92,7 +99,8 @@ void TypeChecker::checkWhileStmt(WhileStmtNode& node) {
   if (node.condition) checkExpression(*node.condition);
   if (!node.condition->semantic.declared_type->is_compatible_with(
           *ctx.get_bool_type())) {
-    report_error(
+    Diagnostics::instance().report_error(
+        LOG_KIND,
         "While statement condition is not compatible with boolean, condition "
         "type: '" +
             node.condition->semantic.declared_type->to_string() + "'",
@@ -103,30 +111,34 @@ void TypeChecker::checkWhileStmt(WhileStmtNode& node) {
 
 void TypeChecker::checkReturn(ReturnStmtNode& node) {
   if (!current_function) {
-    report_error("Tried to return whilst not in function!", node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Tried to return whilst not in function!", node.location);
     return;
   }
 
   if (!node.ret) {
-    report_error("No expression to return", node.ret->location);
+    Diagnostics::instance().report_error(LOG_KIND, "No expression to return",
+                                         node.ret->location);
     return;
   }
 
   checkExpression(*node.ret);
 
   if (!node.ret->semantic.declared_type) {
-    report_error("Return type not found for return statement", node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Return type not found for return statement", node.location);
     return;
   }
 
   if (!node.ret->semantic.declared_type->is_compatible_with(
           *current_function->type)) {
-    report_error("Invalid return type '" +
-                     node.ret->semantic.declared_type->to_string() +
-                     "' for function '" + current_function->name +
-                     "' with type '" + current_function->type->to_string() +
-                     "'",
-                 node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND,
+        "Invalid return type '" +
+            node.ret->semantic.declared_type->to_string() + "' for function '" +
+            current_function->name + "' with type '" +
+            current_function->type->to_string() + "'",
+        node.location);
     return;
   }
 
@@ -140,8 +152,9 @@ void TypeChecker::checkExprStmt(ExprStmtNode& node) {
 
 void TypeChecker::checkMethodDecl(MethodDeclNode& node) {
   if (!node.semantic.data.variable.symbol) {
-    report_error("Function '" + node.identifier.getValue() + "' not resolved",
-                 node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Function '" + node.identifier.getValue() + "' not resolved",
+        node.location);
     return;
   }
 
@@ -158,7 +171,8 @@ const Type* TypeChecker::checkBinaryExpr(BinaryExprNode& node) {
   if (node.right) right = checkExpression(*node.right);
 
   if (!left || !right) {
-    report_error("Binary expr side does not resolve to a type", node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Binary expr side does not resolve to a type", node.location);
     return ctx.get_void_type();
   }
 
@@ -166,11 +180,12 @@ const Type* TypeChecker::checkBinaryExpr(BinaryExprNode& node) {
   // left, maybe for stuff like "left" + 2 == "left2"
   const Type* result = check_binary_op(node.op.getType(), *left, *right);
   if (result->equals(*ctx.get_void_type())) {
-    report_error("Right type '" + right->to_string() +
-                     "' is not compatible with left type '" +
-                     left->to_string() + "' with operator '" +
-                     node.op.getValue() + "'",
-                 node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND,
+        "Right type '" + right->to_string() +
+            "' is not compatible with left type '" + left->to_string() +
+            "' with operator '" + node.op.getValue() + "'",
+        node.location);
     return ctx.get_void_type();
   }
 
@@ -184,8 +199,9 @@ const Type* TypeChecker::checkUnaryExpr(UnaryExprNode& node) {
 
   if (!operand || operand->equals(*ctx.get_void_type()) ||
       !operand->equals(*ctx.get_int32_type())) {
-    report_error("Unary expression operand type is not int",
-                 node.operand->location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Unary expression operand type is not int",
+        node.operand->location);
     return ctx.get_void_type();
   }
 
@@ -200,7 +216,8 @@ const Type* TypeChecker::checkLiteralExpr(LiteralExprNode& node) {
 
 const Type* TypeChecker::checkIdentifierExpr(IdentifierExprNode& node) {
   if (!node.semantic.data.variable.symbol) {
-    report_error(
+    Diagnostics::instance().report_error(
+        LOG_KIND,
         "Symbol not found for identifier '" + node.identifier.getValue() + "'",
         node.location);
     return ctx.get_void_type();
@@ -211,7 +228,8 @@ const Type* TypeChecker::checkIdentifierExpr(IdentifierExprNode& node) {
 
 const Type* TypeChecker::checkAssignmentExpr(AssignmentExprNode& node) {
   if (!node.semantic.data.variable.symbol) {
-    report_error("Symbol not found for assignment", node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Symbol not found for assignment", node.location);
     return ctx.get_void_type();
   }
 
@@ -220,11 +238,12 @@ const Type* TypeChecker::checkAssignmentExpr(AssignmentExprNode& node) {
 
   if (!node.left->semantic.declared_type->is_compatible_with(
           *node.right->semantic.declared_type)) {
-    report_error("Left type '" +
-                     node.left->semantic.declared_type->to_string() +
-                     "' is not compatible with right type '" +
-                     node.right->semantic.declared_type->to_string() + "'",
-                 node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND,
+        "Left type '" + node.left->semantic.declared_type->to_string() +
+            "' is not compatible with right type '" +
+            node.right->semantic.declared_type->to_string() + "'",
+        node.location);
     return ctx.get_void_type();
   }
 
@@ -245,9 +264,11 @@ const Type* TypeChecker::checkMethodCall(MethodCallNode& node) {
       ctx.method_table.find_overload("", node.identifier.getValue(), arg_types);
 
   if (!candidate) {
-    report_error("Cannot find candidate for method call with identifier '" +
-                     node.identifier.getValue() + "'",
-                 node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND,
+        "Cannot find candidate for method call with identifier '" +
+            node.identifier.getValue() + "'",
+        node.location);
     return ctx.get_void_type();
   }
 
@@ -261,7 +282,8 @@ const Type* TypeChecker::checkArgument(ArgumentNode& node) {
   if (node.expr) result = checkExpression(*node.expr);
 
   if (!result) {
-    report_error("Type not found for argument node", node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Type not found for argument node", node.location);
     return ctx.get_void_type();
   }
 

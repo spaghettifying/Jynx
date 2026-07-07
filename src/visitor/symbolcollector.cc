@@ -1,5 +1,7 @@
 #include "visitor/symbolcollector.hh"
 
+#include "diagnostics.hh"
+
 void SymbolCollector::collectStatement(StmtNode& stmt) {
   if (auto* node = dynamic_cast<BlockNode*>(&stmt))
     collectBlock(*node);
@@ -83,7 +85,8 @@ void SymbolCollector::collectBlock(BlockNode& node) {
 
 void SymbolCollector::collectMethodDecl(MethodDeclNode& node) {
   if (!node.declared_type) {
-    report_error("Missing return type in method declaration", node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Missing return type in method declaration", node.location);
     return;
   }
 
@@ -93,7 +96,8 @@ void SymbolCollector::collectMethodDecl(MethodDeclNode& node) {
 
   for (auto& param : node.param_list) {
     if (!param->declared_type) {
-      report_error("Missing type in parameter", param->location);
+      Diagnostics::instance().report_error(
+          LOG_KIND, "Missing type in parameter", param->location);
       continue;
     }
 
@@ -115,10 +119,11 @@ void SymbolCollector::collectMethodDecl(MethodDeclNode& node) {
     node.semantic.data.variable.symbol = func_sym;
     std::string error;
     if (!ctx.method_table.add_method(func_sym, &error))
-      report_error(error, node.location);
+      Diagnostics::instance().report_error(LOG_KIND, error, node.location);
   } else {
-    report_error("Failed to declare method " + node.identifier.getValue(),
-                 node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Failed to declare method " + node.identifier.getValue(),
+        node.location);
   }
 
   if (node.body) {
@@ -130,7 +135,8 @@ void SymbolCollector::collectMethodDecl(MethodDeclNode& node) {
 
 void SymbolCollector::collectParamNode(ParamNode& node) {
   if (!node.declared_type) {
-    report_error("Missing type in parameter declaration", node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Missing type in parameter declaration", node.location);
     return;
   }
 
@@ -138,7 +144,8 @@ void SymbolCollector::collectParamNode(ParamNode& node) {
                             node.location);
 
   if (!symbol) {
-    report_error(
+    Diagnostics::instance().report_error(
+        LOG_KIND,
         "Redeclaration of parameter '" + node.identifier.getValue() + "'",
         node.location);
     return;
@@ -195,12 +202,14 @@ void SymbolCollector::collectArgument(ArgumentNode& node) {
 
 void SymbolCollector::collectVarDecl(VarDeclNode& node) {
   if (!node.declared_type) {
-    report_error("Missing type in variable declaration", node.location);
+    Diagnostics::instance().report_error(
+        LOG_KIND, "Missing type in variable declaration", node.location);
     return;
   }
 
   if (ctx.lookup(node.identifier.getValue(), true)) {
-    report_error(
+    Diagnostics::instance().report_error(
+        LOG_KIND,
         "Redeclaration of variable '" + node.identifier.getValue() + "'",
         node.location);
     return;

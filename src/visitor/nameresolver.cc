@@ -1,5 +1,7 @@
 #include "visitor/nameresolver.hh"
 
+#include "diagnostics.hh"
+
 void NameResolver::resolveStatement(StmtNode& stmt) {
   if (auto* node = dynamic_cast<BlockNode*>(&stmt))
     resolveBlock(*node);
@@ -16,7 +18,8 @@ void NameResolver::resolveStatement(StmtNode& stmt) {
   else if (auto* node = dynamic_cast<MethodDeclNode*>(&stmt))
     resolveMethodDecl(*node);
   else
-    report_error("Unknown statment type", stmt.location);
+    Diagnostics::instance().report_error(LOG_KIND, "Unknown statment type",
+                                         stmt.location);
 }
 
 void NameResolver::resolveExpression(ExprNode& expr) {
@@ -87,7 +90,8 @@ void NameResolver::resolveIdentifierExpr(IdentifierExprNode& node) {
   Symbol* sym = ctx.lookup(node.identifier.getValue());
 
   if (!sym) {
-    report_error(
+    Diagnostics::instance().report_error(
+        LOG_KIND,
         "Variable '" + node.identifier.getValue() + "' not found in scope",
         node.location);
     return;

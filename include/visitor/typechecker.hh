@@ -2,15 +2,19 @@
 #define TYPECHECKER_H_
 
 #include "ast.hh"
-#include "visitor.hh"
+#include "context.hh"
 
-class TypeChecker : public ASTVisitor {
+class TypeChecker {
  public:
-  TypeChecker(CompilerContext& ctx) : ASTVisitor(ctx) {}
+  constexpr static const char* LOG_KIND = "TypeChecker";
+
+  TypeChecker(CompilerContext& ctx) : ctx(ctx) {}
 
   void check(ProgramNode& program) { checkProgram(program); }
 
  private:
+  CompilerContext& ctx;
+
   FunctionSymbol* current_function = nullptr;
 
   void checkStatement(StmtNode& stmt);

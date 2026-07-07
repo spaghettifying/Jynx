@@ -93,6 +93,7 @@ class Token {
   std::string getValue() const { return value; }
   int getLine() const { return location.line; }
   int getCol() const { return location.col; }
+  SourceLocation getLocation() const { return location; }
 
   /// Print token info
   void print();  // Declaration only - implementation in token.cc

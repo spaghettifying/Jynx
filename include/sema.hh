@@ -2,7 +2,7 @@
 #define SEMA_H_
 
 #include "ast.hh"
-#include "visitor/visitor.hh"
+#include "context.hh"
 
 class Sema {
  public:

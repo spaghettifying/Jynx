@@ -2,15 +2,19 @@
 #define SYMBOLCOLLECTOR_H_
 
 #include "ast.hh"
-#include "visitor.hh"
+#include "context.hh"
 
-class SymbolCollector : public ASTVisitor {
+class SymbolCollector {
  public:
-  SymbolCollector(CompilerContext& ctx) : ASTVisitor(ctx) {}
+  static constexpr const char* LOG_KIND = "SymbolCollector";
+
+  SymbolCollector(CompilerContext& ctx) : ctx(ctx) {}
 
   void collect(ProgramNode& program) { collectProgram(program); }
 
  private:
+  CompilerContext& ctx;
+
   void collectStatement(StmtNode& stmt);
   void collectExpression(ExprNode& expr);
 
@@ -27,11 +31,6 @@ class SymbolCollector : public ASTVisitor {
   void collectVarDecl(VarDeclNode& node);
 
   void collectParamNode(ParamNode& node);
-
-  // void report_error(const std::string& message,
-  //                   const SourceLocation& location) {
-  //   ctx.report_error("Symbol Collector", message, location);
-  // }
 };
 
 #endif  // SYMBOLCOLLECTOR_H_

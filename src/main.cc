@@ -4,12 +4,10 @@
 #include <string>
 
 #include "diagnostics.hh"
-#include "gen.hh"
 #include "lexer.hh"
 #include "log.hh"
 #include "parser.hh"
 #include "sema.hh"
-#include "visitor/visitor.hh"
 
 void print_usage(char** argv) {
   LOG_FATAL("USAGE: {} <path-to-file>\n", argv[0]);
@@ -42,7 +40,11 @@ int main(const int argc, char** argv) {
   }
 
   if (Diagnostics::instance().has_errors()) {
-    for (auto err : Diagnostics::instance().get_errors()) LOG_ERROR(err);
+    for (const auto& error_kind : Diagnostics::instance().get_errors()) {
+      for (const auto& err : error_kind.second) {
+        LOG_ERROR("{}", err);
+      }
+    }
     delete ast;
     return 1;
   }
@@ -51,6 +53,13 @@ int main(const int argc, char** argv) {
   ProgramNode* sema_tree = sema.analyze(*ast);
 
   if (!sema_tree) {
+    if (Diagnostics::instance().has_errors()) {
+      for (const auto& error_kind : Diagnostics::instance().get_errors()) {
+        for (const auto& err : error_kind.second) {
+          LOG_ERROR("{}", err);
+        }
+      }
+    }
     LOG_ERROR("Semantic analysis failed; skipping code generation");
     delete ast;
     return 1;

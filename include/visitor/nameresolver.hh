@@ -2,20 +2,22 @@
 #define NAMERESOLVER_H_
 
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "ast.hh"
-#include "methodtable.hh"
-#include "visitor/visitor.hh"
+#include "context.hh"
 
-class NameResolver : public ASTVisitor {
+class NameResolver {
  public:
-  NameResolver(CompilerContext& ctx) : ASTVisitor(ctx) {}
+  constexpr static const char* LOG_KIND = "NameResolver";
+
+  NameResolver(CompilerContext& ctx) : ctx(ctx) {}
 
   void resolve(ProgramNode& program) { resolveProgram(program); }
 
  private:
+  CompilerContext& ctx;
+
   void resolveStatement(StmtNode& stmt);
   void resolveExpression(ExprNode& expr);
 

@@ -2,8 +2,6 @@
 
 #include <cassert>
 
-#include "log.hh"
-
 CompilerContext::CompilerContext() {
   int32_type = create_type<PrimitiveType>(PrimitiveType::Kind::Int32);
   bool_type = create_type<PrimitiveType>(PrimitiveType::Kind::Bool);
@@ -53,14 +51,6 @@ const Type* CompilerContext::make_array_type(const Type* element,
 //   class_cache[class_name] = t;
 //   return t;
 // }
-
-void CompilerContext::report_error(const std::string& error_kind,
-                                   const std::string& message,
-                                   SourceLocation location) {
-  errors.push_back(message);
-  // Log::Compiler::generic_error(error_kind, message, location);
-  Log::Compiler::lexer_error(message, location);
-}
 
 void CompilerContext::push_scope() {
   auto new_scope = std::make_unique<Scope>(current_scope);

@@ -9,7 +9,10 @@ struct SourceLocation {
   void increment_line() { line++; }
   void increment_col() { col++; }
 
-  std::string to_string() { return std::string("line %d, col %d", line, col); }
+  std::string to_string() const {
+    return std::string("line ") + std::to_string(line) + ", col " +
+           std::to_string(col);
+  }
 
   SourceLocation() : line(0), col(0) {}
 };

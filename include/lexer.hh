@@ -4,10 +4,10 @@
 #include <istream>
 #include <string>
 
+#include "context.hh"
 #include "log.hh"
 #include "token.hh"
 #include "trie.hh"
-#include "visitor/visitor.hh"
 
 class Lexer {
  public:

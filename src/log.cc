@@ -142,7 +142,7 @@ void lexer_error(const std::string& message, SourceLocation loc) {
   std::stringstream ss;
   ss << "Lexer error at " << loc.to_string() << ": " << message;
   Logger::error(ss.str());
-  Diagnostics::instance().report_error(ss.str());
+  Diagnostics::instance().report_error("Lexer", ss.str(), loc);
 }
 
 void parser_enter(const std::string& rule) {
@@ -163,7 +163,7 @@ void parser_error(const std::string& message, const Token& token) {
      << ": " << message << " (found: '" << token.getValue()
      << "', type: " << TokenUtils::token_type_to_string(token.getType()) << ")";
   // Logger::error(ss.str());
-  Diagnostics::instance().report_error(ss.str());
+  Diagnostics::instance().report_error("Parser", ss.str(), token.getLocation());
 }
 
 void semantic_error(const std::string& message, int line, int col) {
