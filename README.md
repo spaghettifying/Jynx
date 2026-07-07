@@ -1,9 +1,17 @@
 # Jynx Compiler
 
-A compiler written in C++
-
 ## Setup
+
+``` sh
+cmake . -B build
+cmake --build build
 ```
-meson setup build
-meson compile -C build
+
+Output is located at `build/jynxc`
+
+## Testing
+
+``` sh
+ctest --test-dir build
 ```
+This runs every example in `examples/`
