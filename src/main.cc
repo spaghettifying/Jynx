@@ -32,16 +32,16 @@ int main(const int argc, char** argv) {
 
   Parser parser(lexer, ctx);
 
-  ProgramNode* ast = parser.parseProgram();
+  std::unique_ptr<ProgramNode> ast(parser.parseProgram());
   if (ast != nullptr) {
-    Log::print_ast_reflection(ast);
+    Log::print_ast_reflection(ast.get());
   } else {
     LOG_ERROR("Parser returned null - no AST generated");
+    return 1;
   }
 
   if (Diagnostics::instance().has_errors()) {
     Diagnostics::instance().print_errors();
-    delete ast;
     return 1;
   }
 
@@ -52,18 +52,9 @@ int main(const int argc, char** argv) {
     if (Diagnostics::instance().has_errors()) {
       Diagnostics::instance().print_errors();
       LOG_ERROR("Semantic analysis failed; skipping code generation");
-      delete ast;
       return 1;
     }
-
-    // CodeGenerator gen(ctx);
-    // std::string code = gen.generate(*sema_tree);
-    // LOG_INFO("\n{}", code);
-
-    // std::ofstream out("program.s");
-    // out << code;
-    // out.close();
-
-    delete ast;
   }
+
+  return 0;
 }
