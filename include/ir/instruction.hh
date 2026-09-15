@@ -4,108 +4,109 @@
 #include <cstdint>
 #include <vector>
 
+#include "context.hh"
 #include "type.hh"
 
 namespace ir {
 
-class BasicBlock;
-
-enum Opcode : uint16_t {
-  ConstInt,
-  ConstBool,
-
+enum class Opcode {
+  Alloca,
+  Load,
+  Store,
   Add,
   Sub,
   Mul,
   Div,
 
-  GetArgument,
+  Br,
+  CondBr,
+  Ret,
 
   Phi,
-  Upsilon,
-
-  Jump,
-  Branch,
-  Return,
+  Upsilon
 };
 
-/// IR Instructions have a opcode, a type and optionally args (think 'add %a,
-/// %b', '%a' and '%b' are the args), and a parent basic block. Only
-/// instructions that need extra information have subclasses for now.
-class Instruction {
+class User;
+class BasicBlock;
+
+class Value {
  public:
-  Instruction(Opcode op, const Type* type) : opcode(op), type(type) {}
-  virtual ~Instruction() = default;
+  Value(const Type* type, std::string name = "")
+      : type(type), name(std::move(name)) {}
+  virtual ~Value() = default;
 
-  bool is_terminator() const {
-    return opcode == Opcode::Jump || opcode == Opcode::Branch ||
-           opcode == Opcode::Return;
+  void addUse(User* user) { uses.push_back(user); }
+  void removeUse(User* user) {
+    uses.erase(std::remove(uses.begin(), uses.end(), user), uses.end());
   }
 
-  template <typename T>
-  T* as() {
-    return static_cast<T*>(this);
-  }
-
-  template <typename T>
-  const T* as() const {
-    return static_cast<const T*>(this);
-  }
-
-  void set_parent(BasicBlock* parent) { this->parent = parent; }
-  const BasicBlock* get_parent() const { return parent; }
-
-  Opcode get_opcode() const { return opcode; }
-
-  const Type* get_type() const { return type; }
-
-  void set_args(std::vector<Instruction*> args) { this->args = args; }
-  const std::vector<Instruction*>& get_args() const { return args; }
-
-  void set_name(std::string name) { this->name = name; }
-  const std::string get_name() const { return name; }
-
- protected:
-  Opcode opcode;
-  const Type* type = nullptr;
-  std::vector<Instruction*> args;
-  BasicBlock* parent = nullptr;
+  const Type* type;
   std::string name;
+  std::vector<User*> uses;
 };
 
-class ConstInt : public Instruction {
- public:
-  int64_t value;
-  ConstInt(const Type* type, int64_t v)
-      : Instruction(Opcode::ConstInt, type), value(v) {}
-};
+struct Use {
+  Value* value;
+  User* user;
 
-class ConstBool : public Instruction {
- public:
-  bool value;
-  ConstBool(const Type* type, bool v)
-      : Instruction(Opcode::ConstBool, type), value(v) {}
-};
+  Use(Value* value, User* user) : value(value), user(user) {
+    if (value) value->addUse(user);
+  }
 
-class GetArgumentInstruction : public Instruction {
- public:
-  unsigned arg_index;
-  GetArgumentInstruction(const Type* type, unsigned idx)
-      : Instruction(Opcode::GetArgument, type), arg_index(idx) {}
-};
+  ~Use() {
+    if (value) value->removeUse(user);
+  }
 
-class UpsilonInstruction : public Instruction {
- public:
-  Instruction* phi = nullptr;
-  UpsilonInstruction(Instruction* value, Instruction* target_phi)
-      : Instruction(Opcode::Upsilon, nullptr), phi(target_phi) {
-    args.push_back(value);
+  void set(Value* newValue) {
+    if (value) value->removeUse(user);
+    value = newValue;
+    if (value) value->addUse(user);
   }
 };
 
-class PhiInstruction : public Instruction {
+class User : public Value {
+ protected:
+  std::vector<Use> operands;
+
  public:
-  explicit PhiInstruction(const Type* type) : Instruction(Opcode::Phi, type) {}
+  User(const Type* type, std::string name = "")
+      : Value(type, std::move(name)) {}
+
+  Value* getOperand(size_t index) const { return operands[index].value; }
+  void setOperand(size_t index, Value* value) { operands[index].set(value); }
+  size_t getNumOperands() const { return operands.size(); }
+
+  void addOperand(Value* value) { operands.emplace_back(value, this); }
+};
+
+class Instruction : public User {
+ public:
+  Opcode op;
+  BasicBlock* parent;
+
+  Instruction(Opcode op, const Type* type, BasicBlock* parent = nullptr,
+              std::string name = "")
+      : User(type, std::move(name)), op(op), parent(parent) {}
+};
+
+class UpsilonInst : public Instruction {
+ public:
+  class PhiInst* targetPhi;
+
+  UpsilonInst(Value* sourceValue, PhiInst* targetPhi,
+              BasicBlock* parent = nullptr)
+      : Instruction(Opcode::Upsilon,
+                    CompilerContext::instance().get_void_type(), parent),
+        targetPhi(targetPhi) {
+    addOperand(sourceValue);
+  }
+
+  Value* getValue() const { return getOperand(0); }
+};
+
+class PhiInst : public Instruction {
+  PhiInst(const Type* type, std::string name = "", BasicBlock* parent = nullptr)
+      : Instruction(Opcode::Phi, type, parent, std::move(name)) {}
 };
 
 }  // namespace ir

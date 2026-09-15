@@ -22,6 +22,8 @@ class Module {
     return functions;
   }
 
+  void addFunction(Function* function) { functions.emplace_back(function); }
+
  private:
   std::vector<std::unique_ptr<Function>> functions;
 };

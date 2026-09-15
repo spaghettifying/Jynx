@@ -11,7 +11,13 @@
 
 class CompilerContext {
  public:
-  CompilerContext();
+  static CompilerContext& instance() {
+    static CompilerContext instance;
+    return instance;
+  }
+
+  CompilerContext(const CompilerContext&) = delete;
+  CompilerContext& operator=(const CompilerContext&) = delete;
 
   std::unordered_map<std::string, Symbol> symbol_table;
   MethodTable method_table;
@@ -44,6 +50,8 @@ class CompilerContext {
                  bool walkParent = true);
 
  private:
+  CompilerContext();
+
   std::vector<std::unique_ptr<Type>> type_storage;
   std::vector<std::unique_ptr<Scope>> scope_storage;
 
